@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "cs6440-cqm-lab"
+version = "0.1.0"
+description = ""
+authors = ["Eric Pan <ericpan64@gatech.edu>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+arrow = "^1.2.3"
+
+# You are allowed to add more dependencies - please list them below this comment if added:
+
+[tool.poetry.dev-dependencies]
+pre-commit = "^2.20.0"
+black = "^22.3.0"
+isort = "^5.10.1"
+mypy = "^0.960"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
