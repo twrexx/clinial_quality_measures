@@ -113,17 +113,34 @@ class CMS165v11Runner(BaseRunner):
             if pid in denom:
                 effectiveDate = observation.get('effectiveDateTime')
                 components = observation.get('component')
+                dia = False
+                sys = False
+                diastolic = 0
+                systolic = 0
                 if components != None:
                     for c in components:
-                        print(c.get('code').get('text'))
-                        print(c,'\n')
-
+                        tt = (c.get('code').get('text'))
+                        if c.get('code').get('text') == 'Diastolic Blood Pressure':
+                            diastolic = c.get('valueQuantity').get('value')
+                            dia = True
+                            print('dia=', dia)
+                        if c.get('code').get('text') == 'Systolic Blood Pressure':
+                            systolic = c.get('valueQuantity').get('value')
+                            print(type(systolic), systolic)
+                            sys = True
                 if pid in temp:
-                    if temp.get(pid) > effectiveDate:
-                        temp[pid] = effectiveDate
+                    if temp.get(pid)[0] <= effectiveDate:
+                        temp[pid][0] = effectiveDate
+                        if diastolic <= 90 and dia and systolic <= 140 and sys:
+                            temp[pid][1] = True
+                        else:
+                            temp[pid][1] = False
                 else:
-                    temp[pid] = effectiveDate
-
+                    if diastolic <= 90 and systolic <= 140:
+                        temp[pid] = [effectiveDate, True]
+                    else:
+                        temp[pid] = [effectiveDate, False]
+        print(temp)
 
         return res
 
