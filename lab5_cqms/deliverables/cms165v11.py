@@ -45,7 +45,18 @@ class CMS165v11Runner(BaseRunner):
         """
         # Implement code for the calculating the Initial Population here.
         # FIXME
-        ...
+        res = set()
+        for patient in self.patient_list:
+            age = get_datediff_in_years(patient.get("birthDate"), self.end_period)
+            if 18.0 <= age <= 85.0:
+                pid = patient.get("id")
+                condition_list = get_resource_sublist(self.condition_list, {pid})
+                for c in condition_list:
+                    snom = nested_get(c, "code.coding")[0]
+                    if snom.get('code') == '59621000':
+
+                        res.add(pid)
+        return res
 
     def denominator(self) -> set[str]:
         """
