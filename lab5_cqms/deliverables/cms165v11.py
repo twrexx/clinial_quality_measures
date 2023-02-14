@@ -74,6 +74,25 @@ class CMS165v11Runner(BaseRunner):
         """
         # Implement code for the calculating the Denominator Exclusions here.
         # FIXME
+        denom = self.denominator()
+        res = set()
+        temp = set()
+        for patient in self.patient_list:
+            pid = patient.get('id')
+            if pid in denom:
+                birthdate = patient.get('birthDate')
+                age = get_datediff_in_years(birthdate, self.end_period)
+                if 66 <= age <= 80:
+                    temp.add(pid)
+        
+        for condition in self.condition_list:
+            pid = get_reference_id_from_resource(condition)
+            if pid in temp:
+                con = nested_get(condition, 'code.coding')[0].get('display')
+                if con in ADVANCED_ILLNESS_SET:
+                    res.add(pid)
+
+        return res
         ...
 
     def numerator(self) -> set[str]:
@@ -86,7 +105,27 @@ class CMS165v11Runner(BaseRunner):
         """
         # Implement code for the calculating the Numerator here.
         # FIXME
-        ...
+        denom = self.denominator()
+        res = set()
+        temp = {}
+        for observation in self.observation_list:
+            pid = get_reference_id_from_resource(observation)
+            if pid in denom:
+                effectiveDate = observation.get('effectiveDateTime')
+                components = observation.get('component')
+                if components != None:
+                    for c in components:
+                        print(c.get('code').get('text'))
+                        print(c,'\n')
+
+                if pid in temp:
+                    if temp.get(pid) > effectiveDate:
+                        temp[pid] = effectiveDate
+                else:
+                    temp[pid] = effectiveDate
+
+
+        return res
 
     def numerator_exclusions(self) -> set[str] | None:
         """

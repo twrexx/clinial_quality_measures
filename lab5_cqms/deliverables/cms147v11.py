@@ -60,17 +60,16 @@ class CMS147v11Runner(BaseRunner):
         # FIXME
         res = set()
         initial_pop = self.initial_population()
-        for list in self.encounter_list:
-            patient = list.get('subject')
+        for encounter in self.encounter_list:
+            patient = encounter.get('subject')
             pid = patient.get('reference')[8:]          # get patient id from encounter
             # print(pid)
             if pid in initial_pop:                      # if the patient id is in the initial population
-                start = nested_get(list, "period.start")
-                end = nested_get(list, "period.end")
+                start = nested_get(encounter, "period.start")
+                end = nested_get(encounter, "period.end")
                 if (date_is_within_date_range(start, self.start_period, self.end_period) and (6 <= int(start.split('-')[1]) <= 10)) or (date_is_within_date_range(end, self.start_period, self.end_period) and (6 <= int(end.split('-')[1]) <= 10)):
-                    res.add(patient.get('id'))
+                    res.add(pid)
             
-           
         return res
 
     def denominator_exclusions(self) -> set[str] | None:
@@ -91,7 +90,14 @@ class CMS147v11Runner(BaseRunner):
         # Implement code for calculating the Numerator here.
         # FIXME
         res = set()
-
+        denom = self.denominator()
+        for immunization in self.immunization_list:
+            pid = immunization.get('patient').get('reference')[8:]
+            if pid in denom:
+                code = nested_get(immunization, "vaccineCode.coding")[0].get('code')
+                date = immunization.get('occurrenceDateTime')
+                if code == '140' and date_is_within_date_range(date, self.start_period, self.end_period):
+                    res.add(pid)
         return res
 
     def numerator_exclusions(self) -> set[str] | None:
