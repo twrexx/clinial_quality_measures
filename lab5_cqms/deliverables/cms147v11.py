@@ -42,11 +42,15 @@ class CMS147v11Runner(BaseRunner):
         # Implement code for the calculating the Initial Population here.
         # FIXME
         res = set()
-        for patient in self.patient_list:
-            age = get_datediff_in_years(patient.get("birthDate"), self.start_period)
-            if age >= 0.5:
-                pid = patient.get("id")
-                res.add(pid)
+        for encounter in self.encounter_list:
+            pid = get_reference_id_from_resource(encounter)
+            encounterDate = nested_get(encounter, 'period.start')
+            if date_is_within_date_range(encounterDate, self.start_period, self.end_period):
+                for patient in self.patient_list:
+                    if patient.get('id') == pid:
+                        age = get_datediff_in_years(patient.get('birthDate'), encounterDate)
+                        if age >= 0.5:
+                            res.add(pid)
         return res
 
     def denominator(self) -> set[str]:
@@ -67,7 +71,9 @@ class CMS147v11Runner(BaseRunner):
             if pid in initial_pop:                      # if the patient id is in the initial population
                 start = nested_get(encounter, "period.start")
                 end = nested_get(encounter, "period.end")
-                if (date_is_within_date_range(start, self.start_period, self.end_period) and (6 <= int(start.split('-')[1]) <= 10)) or (date_is_within_date_range(end, self.start_period, self.end_period) and (6 <= int(end.split('-')[1]) <= 10)):
+                startMonth = int(start.split('-')[1])
+                endMonth = int(end.split('-')[1])
+                if (date_is_within_date_range(start, self.start_period, self.end_period) and (startMonth <= 3 or startMonth >= 10) or (date_is_within_date_range(end, self.start_period, self.end_period) and (endMonth <= 3 or endMonth >= 10))):
                     res.add(pid)
             
         return res
@@ -96,7 +102,8 @@ class CMS147v11Runner(BaseRunner):
             if pid in denom:
                 code = nested_get(immunization, "vaccineCode.coding")[0].get('code')
                 date = immunization.get('occurrenceDateTime')
-                if code == '140' and date_is_within_date_range(date, self.start_period, self.end_period):
+                status = immunization.get('status')
+                if code == '140' and date_is_within_date_range(date, self.start_period, self.end_period) and status == 'completed':
                     res.add(pid)
         return res
 
