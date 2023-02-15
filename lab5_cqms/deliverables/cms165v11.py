@@ -4,6 +4,7 @@ from typing import Any
 import arrow
 from util.helpers import (
     get_datediff_in_years,
+    date_is_within_date_range,
     get_reference_id_from_resource,
     get_resource_sublist,
     nested_get,
@@ -112,36 +113,38 @@ class CMS165v11Runner(BaseRunner):
             pid = get_reference_id_from_resource(observation)
             if pid in denom:
                 effectiveDate = observation.get('effectiveDateTime')
-                components = observation.get('component')
-                dia = False
-                sys = False
-                diastolic = 0
-                systolic = 0
-                if components != None:
-                    for c in components:
-                        tt = (c.get('code').get('text'))
-                        if c.get('code').get('text') == 'Diastolic Blood Pressure':
-                            diastolic = c.get('valueQuantity').get('value')
-                            dia = True
-                            print('dia=', dia)
-                        if c.get('code').get('text') == 'Systolic Blood Pressure':
-                            systolic = c.get('valueQuantity').get('value')
-                            print(type(systolic), systolic)
-                            sys = True
-                if pid in temp:
-                    if temp.get(pid)[0] <= effectiveDate:
-                        temp[pid][0] = effectiveDate
-                        if diastolic <= 90 and dia and systolic <= 140 and sys:
-                            temp[pid][1] = True
-                        else:
-                            temp[pid][1] = False
-                else:
-                    if diastolic <= 90 and systolic <= 140:
-                        temp[pid] = [effectiveDate, True]
+                if date_is_within_date_range(effectiveDate, self.start_period, self.end_period):
+                    components = observation.get('component')
+                    dia = False
+                    sys = False
+                    diastolic = 0
+                    systolic = 0
+                    if components != None:
+                        for c in components:
+                            text = (c.get('code').get('text'))
+                            if text == 'Diastolic Blood Pressure':
+                                diastolic = c.get('valueQuantity').get('value')
+                                dia = True
+                            if text == 'Systolic Blood Pressure':
+                                systolic = c.get('valueQuantity').get('value')
+                                sys = True
+                    if pid in temp:
+                        if temp.get(pid)[0] <= effectiveDate and dia and sys:
+                            temp[pid][0] = effectiveDate
+                            if diastolic <= 90 and systolic <= 140:
+                                temp[pid][1] = True
+                            else: 
+                                temp[pid][1] = False
                     else:
-                        temp[pid] = [effectiveDate, False]
-        print(temp)
+                        if dia and sys:
+                            if diastolic <= 90 and systolic <= 140:
+                                temp[pid] = [effectiveDate, True]
+                            else:
+                                temp[pid] = [effectiveDate, False]
 
+        for key, value in temp.items():
+            if value[1] == True:
+                res.add(key)
         return res
 
     def numerator_exclusions(self) -> set[str] | None:
